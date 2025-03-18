@@ -5,6 +5,11 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import * as process from 'node:process';
 import { ReservoirModule } from './reservoir/reservoir.module';
+import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
+import Keyv from 'keyv';
+import { createKeyv } from '@keyv/redis';
+import { CacheableMemory } from 'cacheable';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [ConfigModule.forRoot({
@@ -23,14 +28,35 @@ import { ReservoirModule } from './reservoir/reservoir.module';
       logging: process.env.NODE_ENV !== 'production',
     }),
     ReservoirModule,
+    CacheModule.registerAsync({
+      isGlobal: true,
+      useFactory: async () => {
+        return {
+          stores: [
+            new Keyv({
+              deserialize: JSON.parse,
+              serialize: JSON.stringify,
+              store: new CacheableMemory({ ttl: 120000, lruSize: 5000 }),
+            }),
+            createKeyv(`redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`),
+          ],
+        };
+      },
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: CacheInterceptor,
+    },
+  ],
 })
 export class AppModule {
   constructor() {
     if (!process.env.DATABASE_HOST || !process.env.DATABASE_USERNAME || !process.env.DATABASE_PASSWORD || !process.env.DATABASE) {
-      throw new Error('Необходимые переменные окружения не заданы!');
+      throw new Error('Required env is missing');
     }
   }
 }

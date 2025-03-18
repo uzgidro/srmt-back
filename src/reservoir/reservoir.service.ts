@@ -15,4 +15,8 @@ export class ReservoirService {
   async findAll() {
     return this.reservoirRepository.find();
   }
+
+  async findOne(id: number) {
+    return this.reservoirRepository.findOneByOrFail({ id });
+  }
 }
