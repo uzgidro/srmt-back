@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { DailyValueEntity } from '../daily_value/daily-value.entity';
 
 
 @Entity({ name: 'reservoirs' })
@@ -14,4 +15,7 @@ export class ReservoirEntity {
 
   @Column()
   lon: string;
+
+  @OneToMany(type => DailyValueEntity, (dailyValue) => dailyValue.reservoir)
+  dailyValue: DailyValueEntity[];
 }

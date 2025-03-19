@@ -12,14 +12,14 @@ import { DailyValueModule } from './daily_value/daily-value.module';
   imports: [
     envModule,
     mysqlModule,
-    redisModule,
+    // redisModule,
     ReservoirModule,
     DailyValueModule,
     ReservoirModule,
   ],
   controllers: [AppController],
   providers: [
-    cacheInterceptor,
+    // cacheInterceptor,
     AppService,
   ],
 })

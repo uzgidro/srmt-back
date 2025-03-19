@@ -2,7 +2,7 @@ import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 't
 import { ReservoirEntity } from '../reservoir/reservoir.entity';
 
 
-@Entity({ name: 'daily-values' })
+@Entity({ name: 'daily_values' })
 export class DailyValueEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -19,4 +19,11 @@ export class DailyValueEntity {
   @ManyToOne(() => ReservoirEntity, (reservoir) => reservoir.id)
   @JoinColumn({name: 'reservoir_id', referencedColumnName: 'id'})
   reservoir: ReservoirEntity;
+
+
+  constructor(category: string, date: string, value: number) {
+    this.category = category;
+    this.date = date;
+    this.value = value;
+  }
 }

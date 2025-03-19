@@ -9,7 +9,7 @@ export class DailyValueController {
 
   @Get()
   async lol() {
-    return await this.dailyValueService.lol();
+    return await this.dailyValueService.updateData();
   }
 
   //

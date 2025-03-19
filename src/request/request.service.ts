@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { AxiosError, AxiosRequestConfig } from 'axios';
+import { AxiosError } from 'axios';
 import { HttpService } from '@nestjs/axios';
-import { catchError, firstValueFrom } from 'rxjs';
+import { catchError, firstValueFrom, map } from 'rxjs';
 import * as process from 'node:process';
+import { StaticDto, StaticResponse } from '../interfaces/static.response';
 
 @Injectable()
 export class RequestService {
@@ -11,17 +12,22 @@ export class RequestService {
     private readonly httpService: HttpService,
   ) {}
 
-  async fetchLastData() {
-    const { data } = await firstValueFrom(
-      this.httpService.get<string>(process.env.STATIC_DATE!, {params: {
-          id: 1, date: '2025-03-01'
-        }}).pipe(
+  async fetchLastData(id: number, date: string) {
+    return firstValueFrom(
+      this.httpService.get<{ items: StaticResponse[] }>(process.env.STATIC_DATE!, {
+        params: {
+          id: id, date: date
+        }
+      }).pipe(
+        // transform to StaticDTO
+        map(response => {
+          return response.data.items.map(item => new StaticDto(item));
+        }),
         catchError((error: AxiosError) => {
           throw 'An error happened!';
         }),
       ),
     );
-    return data;
   }
 
   // async getOhangaron() {
