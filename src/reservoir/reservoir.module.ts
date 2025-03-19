@@ -8,7 +8,7 @@ import { ReservoirEntity } from './reservoir.entity';
   imports: [TypeOrmModule.forFeature([ReservoirEntity])],
   controllers: [ReservoirController],
   providers: [ReservoirService],
-  // exports: [TypeOrmModule]
+  exports: [ReservoirService],
 })
 export class ReservoirModule {
 }

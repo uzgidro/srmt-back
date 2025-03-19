@@ -1,10 +1,15 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { DailyValueService } from './daily-value.service';
 
-@Controller('reservoir')
+@Controller('value')
 export class DailyValueController {
 
   constructor(private dailyValueService: DailyValueService) {
+  }
+
+  @Get()
+  async lol() {
+    return await this.dailyValueService.lol();
   }
 
   //
