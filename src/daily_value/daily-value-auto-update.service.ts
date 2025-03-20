@@ -42,7 +42,7 @@ export class DailyValueAutoUpdateService {
   }
 
   private async getDataForDb(reservoir: ReservoirEntity, date: string) {
-    let staticDtos = await this.requestService.fetchLastData(reservoir.id, date);
+    let staticDtos = await this.requestService.fetchLastData(reservoir, date);
     const dataAtDayBegin = staticDtos.find(item => item.time == 6);
     let income: number;
     let release: number;

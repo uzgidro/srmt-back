@@ -4,6 +4,7 @@ import { HttpService } from '@nestjs/axios';
 import { catchError, firstValueFrom, map } from 'rxjs';
 import * as process from 'node:process';
 import { StaticDto, StaticResponse } from '../interfaces/static.response';
+import { ReservoirEntity } from '../reservoir/reservoir.entity';
 
 @Injectable()
 export class RequestService {
@@ -12,16 +13,16 @@ export class RequestService {
     private readonly httpService: HttpService,
   ) {}
 
-  async fetchLastData(id: number, date: string) {
+  async fetchLastData(reservoir: ReservoirEntity, date: string) {
     return firstValueFrom(
       this.httpService.get<{ items: StaticResponse[] }>(process.env.STATIC_DATE!, {
         params: {
-          id: id, date: date
+          id: reservoir.id, date: date
         }
       }).pipe(
         // transform to StaticDTO
         map(response => {
-          return response.data.items.map(item => new StaticDto(item));
+          return response.data.items.map(item => new StaticDto(item, reservoir.name));
         }),
         catchError((error: AxiosError) => {
           throw 'An error happened!';
@@ -30,16 +31,16 @@ export class RequestService {
     );
   }
 
-  async fetchCurrentData(id: number) {
+  async fetchCurrentData(reservoir: ReservoirEntity) {
     return firstValueFrom(
       this.httpService.get<{ items: StaticResponse[] }>(process.env.STATIC_DAILY!, {
         params: {
-          id: id
+          id: reservoir.id, limit: 13
         }
       }).pipe(
         // transform to StaticDTO
         map(response => {
-          return response.data.items.map(item => new StaticDto(item));
+          return response.data.items.reverse().map(item => new StaticDto(item, reservoir.name));
         }),
         catchError((error: AxiosError) => {
           throw 'An error happened!';
@@ -47,17 +48,4 @@ export class RequestService {
       ),
     );
   }
-
-  // async getOhangaron() {
-  //   const { data } = await firstValueFrom(
-  //     this.httpService
-  //       .get<string>(process.env, this.options)
-  //       .pipe(
-  //         catchError((error: AxiosError) => {
-  //           throw 'An error happened!';
-  //         }),
-  //       ),
-  //   );
-  //   return data;
-  // }
 }

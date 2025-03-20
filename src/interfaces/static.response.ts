@@ -14,6 +14,7 @@ export interface StaticResponse {
 
 export class StaticDto {
   id: number;
+  reservoir: string;
   reservoirId: number;
   date: string;
   time: number;
@@ -22,8 +23,9 @@ export class StaticDto {
   income: number;
   release: number;
 
-  constructor(data: StaticResponse) {
+  constructor(data: StaticResponse, reservoir: string) {
     this.id = data.id;
+    this.reservoir = reservoir;
     this.reservoirId = data.id_wather;
     this.date =data.date;
     this.time = data.time;
