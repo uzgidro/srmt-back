@@ -1,15 +1,24 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UseInterceptors } from '@nestjs/common';
 import { DailyValueService } from './daily-value.service';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('value')
+@UseInterceptors(CacheInterceptor)
 export class DailyValueController {
 
   constructor(private dailyValueService: DailyValueService) {
   }
 
-  @Get()
-  async getCurrentData() {
-    return await this.dailyValueService.getCurrentData()
+  @CacheTTL(3600000)
+  @Get('current')
+  async getCurrentDataByCategory() {
+    return await this.dailyValueService.getCurrentDataByCategory();
+  }
+
+  @CacheTTL(3600000)
+  @Get('reservoir')
+  async getCurrentDataByReservoir() {
+    return await this.dailyValueService.getCurrentDataByReservoir();
   }
 
 

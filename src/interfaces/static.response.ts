@@ -1,3 +1,5 @@
+import { ReservoirEntity } from '../reservoir/reservoir.entity';
+
 export interface StaticResponse {
   id: number;
   id_wather: number;
@@ -14,8 +16,7 @@ export interface StaticResponse {
 
 export class StaticDto {
   id: number;
-  reservoir: string;
-  reservoirId: number;
+  reservoir: ReservoirEntity;
   date: string;
   time: number;
   level: number;
@@ -23,11 +24,10 @@ export class StaticDto {
   income: number;
   release: number;
 
-  constructor(data: StaticResponse, reservoir: string) {
+  constructor(data: StaticResponse, reservoir: ReservoirEntity) {
     this.id = data.id;
     this.reservoir = reservoir;
-    this.reservoirId = data.id_wather;
-    this.date =data.date;
+    this.date = data.date;
     this.time = data.time;
     this.level = data.level;
     this.volume = data.size > 30000 ? data.size / 1000 : data.size;
