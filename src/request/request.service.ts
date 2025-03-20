@@ -30,6 +30,24 @@ export class RequestService {
     );
   }
 
+  async fetchCurrentData(id: number) {
+    return firstValueFrom(
+      this.httpService.get<{ items: StaticResponse[] }>(process.env.STATIC_DAILY!, {
+        params: {
+          id: id
+        }
+      }).pipe(
+        // transform to StaticDTO
+        map(response => {
+          return response.data.items.map(item => new StaticDto(item));
+        }),
+        catchError((error: AxiosError) => {
+          throw 'An error happened!';
+        }),
+      ),
+    );
+  }
+
   // async getOhangaron() {
   //   const { data } = await firstValueFrom(
   //     this.httpService
