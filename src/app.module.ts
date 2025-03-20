@@ -7,19 +7,21 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ReservoirModule } from './reservoir/reservoir.module';
 import { DailyValueModule } from './daily_value/daily-value.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
     envModule,
     mysqlModule,
-    // redisModule,
+    redisModule,
+    ScheduleModule.forRoot(),
     ReservoirModule,
     DailyValueModule,
     ReservoirModule,
   ],
   controllers: [AppController],
   providers: [
-    // cacheInterceptor,
+    cacheInterceptor,
     AppService,
   ],
 })

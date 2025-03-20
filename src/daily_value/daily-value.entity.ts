@@ -21,9 +21,10 @@ export class DailyValueEntity {
   reservoir: ReservoirEntity;
 
 
-  constructor(category: string, date: string, value: number) {
+  constructor(category: string, date: string, value: number, reservoir: ReservoirEntity) {
     this.category = category;
     this.date = date;
     this.value = value;
+    this.reservoir = reservoir;
   }
 }

@@ -7,10 +7,6 @@ export class DailyValueController {
   constructor(private dailyValueService: DailyValueService) {
   }
 
-  @Get()
-  async lol() {
-    return await this.dailyValueService.updateData();
-  }
 
   //
   // @CacheTTL(0)

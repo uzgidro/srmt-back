@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { DailyValueEntity } from './daily-value.entity';
 import { RequestService } from '../request/request.service';
 import { ReservoirService } from '../reservoir/reservoir.service';
+import { ReservoirEntity } from '../reservoir/reservoir.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class DailyValueService {
@@ -16,7 +18,7 @@ export class DailyValueService {
   ) {
   }
 
-
+@Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateData() {
     let reservoirs = await this.reservoirService.findAll();
     const lastDate = await this.repo.find({
@@ -24,10 +26,23 @@ export class DailyValueService {
       take: 1,
     }).then(value => value[0].date);
 
+    const dates = this.getDatesFromStartToToday(lastDate);
+
+    const fetchPromises: Promise<DailyValueEntity[]>[] = []
+
+    for (const reservoir of reservoirs) {
+      for (const date of dates) {
+        fetchPromises.push(this.getDataForDb(reservoir, date));
+      }
+    }
+
+    let fetchedData = await Promise.all(fetchPromises).then(value => value.flat(1));
+
+    await this.repo.save(fetchedData);
   }
 
-  private async getDataForDb(id: number, date: string) {
-    let staticDtos = await this.requestService.fetchLastData(id, date);
+  private async getDataForDb(reservoir: ReservoirEntity, date: string) {
+    let staticDtos = await this.requestService.fetchLastData(reservoir.id, date);
     const dataAtDayBegin = staticDtos.find(item => item.time == 6);
     let income: number;
     let release: number;
@@ -63,11 +78,37 @@ export class DailyValueService {
     }
 
     return [
-      new DailyValueEntity('income', date, income),
-      new DailyValueEntity('release', date, release),
-      new DailyValueEntity('level', date, level),
-      new DailyValueEntity('volume', date, volume),
+      new DailyValueEntity('income', date, income, reservoir),
+      new DailyValueEntity('release', date, release, reservoir),
+      new DailyValueEntity('level', date, level, reservoir),
+      new DailyValueEntity('volume', date, volume, reservoir),
     ];
+  }
+
+  private getDatesFromStartToToday(startDateStr: string): string[] {
+    const startDate = new Date(startDateStr);
+    startDate.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dates: string[] = [];
+
+    if (startDate > today) {
+      throw new Error('Something went wrong with date');
+    }
+
+    let currentDate = new Date(startDate);
+    currentDate.setDate(currentDate.getDate() + 1);
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    while (currentDate < today) {
+      dates.push(formatter.format(currentDate));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
   }
 
   // async findAll() {
