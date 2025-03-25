@@ -8,7 +8,6 @@ export interface ValueResponse {
 export interface ComplexValueResponse {
   reservoir: string
   reservoir_id: number
-  category: string
   data: ValueResponse[]
 }
 
@@ -37,22 +36,18 @@ export interface CategorisedValueResponse {
 export interface OperativeValueResponse {
   name: string
   income: {
-    category: string
     date: string
     value: number
   }[]
   release: {
-    category: string
     date: string
     value: number
   }[]
   level: {
-    category: string
     date: string
     value: number
   }[]
   volume: {
-    category: string
     date: string
     value: number
   }[]

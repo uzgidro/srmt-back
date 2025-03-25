@@ -5,7 +5,12 @@ import { DailyValueEntity } from './daily-value.entity';
 import { RequestService } from '../request/request.service';
 import { ReservoirService } from '../reservoir/reservoir.service';
 import { StaticDto } from '../interfaces/static.response';
-import { CategorisedArrayResponse, ReservoiredArrayResponse, ValueResponse } from '../interfaces/data.response';
+import {
+  CategorisedArrayResponse,
+  ComplexValueResponse,
+  ReservoiredArrayResponse,
+  ValueResponse,
+} from '../interfaces/data.response';
 
 @Injectable()
 export class DailyValueService {
@@ -18,7 +23,7 @@ export class DailyValueService {
   ) {
   }
 
-  async getCurrentDataByCategory() {
+  async getCurrentDataByCategory(): Promise<CategorisedArrayResponse> {
     let rawData = await this.getDataFromStatic();
     let response: CategorisedArrayResponse = { income: [], release: [], level: [], volume: [] };
     rawData.forEach((data) => {
@@ -30,7 +35,7 @@ export class DailyValueService {
     return response;
   }
 
-  async getCurrentDataByReservoir() {
+  async getCurrentDataByReservoir(): Promise<ReservoiredArrayResponse[]> {
     let rawData = await this.getDataFromStatic();
 
     return rawData.map((data) => ({
@@ -39,8 +44,19 @@ export class DailyValueService {
       release: this.setupComplexRelease(data),
       level: this.setupComplexLevel(data),
       volume: this.setupComplexVolume(data),
-    } satisfies ReservoiredArrayResponse));
+    }));
   }
+
+  async getOperativeData() {
+    const rawData = await this.getDataFromStatic();
+    const currentData = rawData.map((data) => {
+      return data.filter(value => value.time == 6).reverse()[0]
+    })
+
+
+  }
+
+  //  Private methods //
 
   private async getDataFromStatic() {
     let reservoirs = await this.reservoirService.findAll();
@@ -52,11 +68,10 @@ export class DailyValueService {
     return Promise.all(promises);
   }
 
-  private setupComplexIncome(data: StaticDto[]) {
+  private setupComplexIncome(data: StaticDto[]): ComplexValueResponse {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      category: 'income',
       data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
@@ -68,11 +83,10 @@ export class DailyValueService {
     };
   }
 
-  private setupComplexRelease(data: StaticDto[]) {
+  private setupComplexRelease(data: StaticDto[]): ComplexValueResponse {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      category: 'release',
       data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
@@ -84,11 +98,10 @@ export class DailyValueService {
     };
   }
 
-  private setupComplexLevel(data: StaticDto[]) {
+  private setupComplexLevel(data: StaticDto[]): ComplexValueResponse {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      category: 'level',
       data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
@@ -100,11 +113,10 @@ export class DailyValueService {
     };
   }
 
-  private setupComplexVolume(data: StaticDto[]) {
+  private setupComplexVolume(data: StaticDto[]): ComplexValueResponse {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      category: 'volume',
       data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);

@@ -21,6 +21,12 @@ export class DailyValueController {
     return await this.dailyValueService.getCurrentDataByReservoir();
   }
 
+  @CacheTTL(1)
+  @Get('operative')
+  async getOperativeData() {
+    return await this.dailyValueService.getOperativeData();
+  }
+
 
   //
   // @CacheTTL(0)
