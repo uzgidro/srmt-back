@@ -15,7 +15,7 @@ export class ReservoirService {
   }
 
   async findAll() {
-    return this.redisService.getReservoirs(this.repo.find());
+    return this.redisService.getReservoirList(this.repo.find());
   }
 
   async findOne(id: number) {

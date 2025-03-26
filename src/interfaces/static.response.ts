@@ -1,4 +1,5 @@
 import { ReservoirEntity } from '../reservoir/reservoir.entity';
+import { ValueResponse } from './data.response';
 
 export interface StaticResponse {
   id: number;
@@ -33,5 +34,33 @@ export class StaticDto {
     this.volume = data.size > 30000 ? data.size / 1000 : data.size;
     this.income = parseFloat(data.to_come);
     this.release = data.to_out;
+  }
+
+  getIncomeResponse(): ValueResponse {
+    return {
+      value: this.income,
+      date: `${this.date} ${String(this.time).padStart(2, '0')}:00:00`,
+    };
+  }
+
+  getReleaseResponse(): ValueResponse {
+    return {
+      value: this.release,
+      date: `${this.date} ${String(this.time).padStart(2, '0')}:00:00`,
+    };
+  }
+
+  getLevelResponse(): ValueResponse {
+    return {
+      value: this.level,
+      date: `${this.date} ${String(this.time).padStart(2, '0')}:00:00`,
+    };
+  }
+
+  getVolumeResponse(): ValueResponse {
+    return {
+      value: this.volume,
+      date: `${this.date} ${String(this.time).padStart(2, '0')}:00:00`,
+    };
   }
 }
