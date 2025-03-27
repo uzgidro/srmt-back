@@ -15,10 +15,10 @@ export class ReservoirService {
   }
 
   async findAll() {
-    return this.redisService.getReservoirList(this.repo.find());
+    return this.redisService.getReservoirList(() => this.repo.find());
   }
 
   async findOne(id: number) {
-    return this.redisService.getReservoir(id, this.repo.findOneByOrFail({ id }))
+    return this.redisService.getReservoir(id, () => this.repo.findOneByOrFail({ id }));
   }
 }

@@ -14,6 +14,7 @@ import {
   ValueResponse,
 } from '../interfaces/data.response';
 import { RedisService } from '../redis/redis.service';
+import { ReservoirEntity } from '../reservoir/reservoir.entity';
 
 @Injectable()
 export class DailyValueService {
@@ -52,86 +53,92 @@ export class DailyValueService {
   }
 
   async getOperativeData() {
-    const today = dayjs();
-    const dates = [
-      today.subtract(1, 'day').format('YYYY-MM-DD'),
-      today.subtract(2, 'day').format('YYYY-MM-DD'),
-      today.subtract(1, 'year').format('YYYY-MM-DD'),
-      today.subtract(2, 'year').format('YYYY-MM-DD'),
-      today.subtract(3, 'year').format('YYYY-MM-DD'),
-    ];
+    return this.redisService.getOperativeData(async () => {
+      const today = dayjs();
+      const dates = [
+        today.subtract(1, 'day').format('YYYY-MM-DD'),
+        today.subtract(2, 'day').format('YYYY-MM-DD'),
+        today.subtract(1, 'year').format('YYYY-MM-DD'),
+        today.subtract(2, 'year').format('YYYY-MM-DD'),
+        today.subtract(3, 'year').format('YYYY-MM-DD'),
+      ];
 
-    const rawData = await this.getDataFromStatic();
-    const currentData = rawData.map((data) => {
-      return data.filter(value => value.time == 6).reverse()[0];
-    });
-
-
-    const reservoirs = await this.reservoirService.findAll();
-    const response: OperativeValueResponse[] = [];
-
-    for (let i = 0; i < reservoirs.length; i++) {
-      const reservoir = reservoirs[i];
-      const fetched = currentData[i];
-      const operative: OperativeValueResponse = {
-        name: reservoir.name,
-        income: [{
-          date: fetched.date,
-          value: fetched.income,
-        }],
-        release: [{
-          date: fetched.date,
-          value: fetched.release,
-        }],
-        level: [{
-          date: fetched.date,
-          value: fetched.level,
-        }],
-        volume: [{
-          date: fetched.date,
-          value: fetched.volume,
-        }],
-      };
-      const data = await this.repo.find({
-        where: [
-          {
-            reservoir: reservoir,
-            date: In(dates),
-          },
-        ],
-        select: {
-          category: true,
-          value: true,
-          date: true,
-        },
-        order: { date: 'DESC' },
+      const rawData = await this.getDataFromStatic();
+      const currentData = rawData.map((data) => {
+        return data.filter(value => value.time == 6).reverse()[0];
       });
 
-      const pastData = this.formatDate(data);
-      const separatedData = this.separateByCategory(pastData);
 
+      const reservoirs = await this.reservoirService.findAll();
+      const promises: Promise<OperativeValueResponse>[] = [];
 
-      operative.income.push(...separatedData['income']);
-      operative.release.push(...separatedData['release']);
-      operative.level.push(...separatedData['level']);
-      operative.volume.push(...separatedData['volume']);
-
-      response.push(operative);
-    }
-
-    return response;
+      for (let i = 0; i < reservoirs.length; i++) {
+        promises.push(this.getDataForOperative(reservoirs[i], currentData[i], dates));
+      }
+      return Promise.all(promises);
+    })
   }
 
   //  Private methods //
 
   private async getDataFromStatic() {
-    let reservoirs = await this.reservoirService.findAll();
-    const promises: Promise<StaticDto[]>[] = [];
+    return this.redisService.getDataFromStatic(async () => {
+      let reservoirs = await this.reservoirService.findAll();
+      const promises: Promise<StaticDto[]>[] = [];
 
-    for (let reservoir of reservoirs) {
-      promises.push(this.requestService.fetchCurrentData(reservoir));
-    }
-    return this.redisService.getDataFromStatic(Promise.all(promises));
+      for (let reservoir of reservoirs) {
+        promises.push(this.requestService.fetchCurrentData(reservoir));
+      }
+      return Promise.all(promises);
+    });
+  }
+
+  private async getDataForOperative(reservoirs: ReservoirEntity, currentData: StaticDto, dates: string[]) {
+    const reservoir = reservoirs;
+    const fetched = currentData;
+    const operative: OperativeValueResponse = {
+      name: reservoir.name,
+      income: [{
+        date: fetched.date,
+        value: fetched.income,
+      }],
+      release: [{
+        date: fetched.date,
+        value: fetched.release,
+      }],
+      level: [{
+        date: fetched.date,
+        value: fetched.level,
+      }],
+      volume: [{
+        date: fetched.date,
+        value: fetched.volume,
+      }],
+    };
+    const data = await this.repo.find({
+      where: [
+        {
+          reservoir: reservoir,
+          date: In(dates),
+        },
+      ],
+      select: {
+        category: true,
+        value: true,
+        date: true,
+      },
+      order: { date: 'DESC' },
+    });
+
+    const pastData = this.formatDate(data);
+    const separatedData = this.separateByCategory(pastData);
+
+
+    operative.income.push(...separatedData['income']);
+    operative.release.push(...separatedData['release']);
+    operative.level.push(...separatedData['level']);
+    operative.volume.push(...separatedData['volume']);
+    return operative;
   }
 
   private formatDate(data: DailyValueEntity[]): DailyValueEntity[] {
