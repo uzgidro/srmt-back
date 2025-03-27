@@ -2,11 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { StaticDto } from '../interfaces/static.response';
 import { ReservoirEntity } from '../reservoir/reservoir.entity';
-import { OperativeValueResponse } from '../interfaces/data.response';
+import { CategorisedValueResponse, OperativeValueResponse } from '../interfaces/data.response';
 
 const RESERVOIRS_KEY = 'reservoirs';
 const STATIC_KEY = 'static';
 const OPERATIVE_KEY = 'operative';
+const DECADE_KEY = 'decade';
 
 @Injectable()
 export class RedisService {
@@ -41,10 +42,8 @@ export class RedisService {
       return staticFromCache;
     } else {
 
-      const now = new Date();
-      const nextEvenHour = new Date();
-      nextEvenHour.setHours(now.getHours() + (now.getHours() % 2 === 0 ? 2 : 1), 15, 0, 0);
-      const timeUntilNextEvenHour = nextEvenHour.getTime() - now.getTime();
+      // timer to next even hour
+      const timeUntilNextEvenHour = this.getTimeToNextEvenHour();
 
       const data = await resource();
       await this.cacheManager.set<StaticDto[][]>(STATIC_KEY, data, timeUntilNextEvenHour);
@@ -57,16 +56,38 @@ export class RedisService {
     if (dataFromCache) {
       return dataFromCache;
     } else {
-
-      const now = new Date();
-      const nextDayBegin = new Date();
-      nextDayBegin.setDate(now.getDate() +1);
-      nextDayBegin.setHours(8,0,0,0)
-      const timeUntilNextDayBegin = nextDayBegin.getTime() - now.getTime();
-
       const data = await resource();
-      await this.cacheManager.set<OperativeValueResponse[]>(OPERATIVE_KEY, data, timeUntilNextDayBegin);
+      await this.cacheManager.set<OperativeValueResponse[]>(OPERATIVE_KEY, data, this.getTimeToNextDayBegin());
       return data;
     }
+  }
+
+  async getDecadeData(id: number, resource: () => Promise<CategorisedValueResponse>) {
+    let dataFromCache = await this.cacheManager.get<CategorisedValueResponse>(DECADE_KEY + '/' + id);
+    if (dataFromCache) {
+      return dataFromCache;
+    } else {
+      const data = await resource();
+      await this.cacheManager.set<CategorisedValueResponse>(DECADE_KEY + '/' + id, data, this.getTimeToNextDayBegin());
+      return data;
+    }
+  }
+
+
+  // Private methods
+
+  private getTimeToNextEvenHour() {
+    const now = new Date();
+    const nextEvenHour = new Date();
+    nextEvenHour.setHours(now.getHours() + (now.getHours() % 2 === 0 ? 2 : 1), 15, 0, 0);
+    return nextEvenHour.getTime() - now.getTime();
+  }
+
+  private getTimeToNextDayBegin() {
+    const now = new Date();
+    const nextDayBegin = new Date();
+    if (now.getHours() >= 8) nextDayBegin.setDate(now.getDate() + 1);
+    nextDayBegin.setHours(8, 0, 0, 0);
+    return nextDayBegin.getTime() - now.getTime();
   }
 }

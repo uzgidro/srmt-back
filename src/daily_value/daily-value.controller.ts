@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { DailyValueService } from './daily-value.service';
 import { DailyValueAutoUpdateService } from './daily-value-auto-update.service';
 
@@ -21,6 +21,12 @@ export class DailyValueController {
   @Get('operative')
   async getOperativeData() {
     return await this.dailyValueService.getOperativeData();
+  }
+
+
+  @Get(':id/decade')
+  async getDecadeData(@Param('id') id: number) {
+    return await this.dailyValueService.getDecadeData(id);
   }
 
   @Get('auto')

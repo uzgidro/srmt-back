@@ -6,8 +6,8 @@ export interface ValueResponse {
 }
 
 export interface ComplexValueResponse {
-  reservoir: string;
   reservoir_id: number;
+  reservoir: string;
   data: ValueResponse[];
 }
 

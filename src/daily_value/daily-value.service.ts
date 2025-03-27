@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Between, In, Repository } from 'typeorm';
 import { DailyValueEntity } from './daily-value.entity';
 import { RequestService } from '../request/request.service';
 import { ReservoirService } from '../reservoir/reservoir.service';
 import { StaticDto } from '../interfaces/static.response';
 import * as dayjs from 'dayjs';
 import {
-  CategorisedArrayResponse,
+  CategorisedArrayResponse, CategorisedValueResponse,
   ComplexValueResponse,
   OperativeValueResponse,
   ReservoiredArrayResponse,
@@ -76,6 +76,61 @@ export class DailyValueService {
         promises.push(this.getDataForOperative(reservoirs[i], currentData[i], dates));
       }
       return Promise.all(promises);
+    });
+  }
+
+  async getDecadeData(id: number) {
+    return await this.redisService.getDecadeData(id, async () => {
+      const now = dayjs();
+      let date: number;
+      if (now.date() < 12) {
+        date = 1;
+      } else if (now.date() < 22) {
+        date = 11;
+      } else {
+        date = 21;
+      }
+      const startDate = dayjs().set('date', date);
+
+      const dailyValueEntities = await this.repo.find({
+        where: {
+          reservoir: {
+            id: id,
+          },
+          date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD'))
+        },
+        relations: {
+          reservoir: true
+        },
+      });
+
+      const data = this.separateByCategory(this.formatDate(dailyValueEntities))
+
+      const response: CategorisedValueResponse = {
+        income: {
+          reservoir_id: dailyValueEntities[0].reservoir.id,
+          reservoir: dailyValueEntities[0].reservoir.name,
+          data: data['income']
+        },
+        release: {
+          reservoir: dailyValueEntities[0].reservoir.name,
+          reservoir_id: dailyValueEntities[0].reservoir.id,
+          data: data['release']
+        },
+        level: {
+          reservoir: dailyValueEntities[0].reservoir.name,
+          reservoir_id: dailyValueEntities[0].reservoir.id,
+          data: data['level']
+        },
+        volume: {
+          reservoir: dailyValueEntities[0].reservoir.name,
+          reservoir_id: dailyValueEntities[0].reservoir.id,
+          data: data['volume']
+        },
+
+      }
+
+      return response;
     })
   }
 
