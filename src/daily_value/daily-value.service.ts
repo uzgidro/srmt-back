@@ -162,12 +162,12 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.map(value => {
+      data: data.reverse().map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {
           value: value.income,
-          date: date.toISOString(),
+          date: dayjs(date).format('YYYY-MM-DD HH:00:00'),
         } satisfies ValueResponse;
       }),
     };
@@ -177,12 +177,12 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.map(value => {
+      data: data.reverse().map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {
           value: value.release,
-          date: date.toISOString(),
+          date: dayjs(date).format('YYYY-MM-DD HH:00:00'),
         } satisfies ValueResponse;
       }),
     };
@@ -192,12 +192,12 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.map(value => {
+      data: data.reverse().map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {
           value: value.level,
-          date: date.toISOString(),
+          date: dayjs(date).format('YYYY-MM-DD HH:00:00'),
         } satisfies ValueResponse;
       }),
     };
@@ -207,12 +207,12 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.map(value => {
+      data: data.reverse().map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {
           value: value.volume,
-          date: date.toISOString(),
+          date: dayjs(date).format('YYYY-MM-DD HH:00:00'),
         } satisfies ValueResponse;
       }),
     };
