@@ -29,6 +29,11 @@ export class DailyValueController {
     return await this.dailyValueService.getDecadeData(id);
   }
 
+  @Get(':id/month')
+  async getMonthData(@Param('id') id: number) {
+    return await this.dailyValueService.getMonthData(id);
+  }
+
   @Get('auto')
   async update() {
     return await this.auto.updateData();

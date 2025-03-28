@@ -134,6 +134,51 @@ export class DailyValueService {
     })
   }
 
+  async getMonthData(id: number) {
+    const now = dayjs();
+    const startDate = dayjs().set('date', 1).set('month', 0);
+
+    const dailyValueEntities = await this.repo.find({
+      where: {
+        reservoir: {
+          id: id,
+        },
+        date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD'))
+      },
+      relations: {
+        reservoir: true
+      },
+    });
+
+    const data = this.separateByCategory(this.formatDate(dailyValueEntities))
+
+    const response: CategorisedValueResponse = {
+      income: {
+        reservoir_id: dailyValueEntities[0].reservoir.id,
+        reservoir: dailyValueEntities[0].reservoir.name,
+        data: data['income']
+      },
+      release: {
+        reservoir: dailyValueEntities[0].reservoir.name,
+        reservoir_id: dailyValueEntities[0].reservoir.id,
+        data: data['release']
+      },
+      level: {
+        reservoir: dailyValueEntities[0].reservoir.name,
+        reservoir_id: dailyValueEntities[0].reservoir.id,
+        data: data['level']
+      },
+      volume: {
+        reservoir: dailyValueEntities[0].reservoir.name,
+        reservoir_id: dailyValueEntities[0].reservoir.id,
+        data: data['volume']
+      },
+
+    }
+
+    return response;
+  }
+
   //  Private methods //
 
   private async getDataFromStatic() {
