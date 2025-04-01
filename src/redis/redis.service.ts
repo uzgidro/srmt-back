@@ -3,11 +3,14 @@ import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { StaticDto } from '../interfaces/static.response';
 import { ReservoirEntity } from '../reservoir/reservoir.entity';
 import { CategorisedValueResponse, OperativeValueResponse } from '../interfaces/data.response';
+import * as dayjs from 'dayjs';
 
 const RESERVOIRS_KEY = 'reservoirs';
 const STATIC_KEY = 'static';
 const OPERATIVE_KEY = 'operative';
 const DECADE_KEY = 'decade';
+const MONTH_KEY = 'month';
+const YEAR_DECADE_KEY = 'year-decade';
 
 @Injectable()
 export class RedisService {
@@ -73,21 +76,54 @@ export class RedisService {
     }
   }
 
+  async getMonthData(id: number, resource: () => Promise<CategorisedValueResponse>) {
+    let dataFromCache = await this.cacheManager.get<CategorisedValueResponse>(MONTH_KEY + '/' + id);
+    if (dataFromCache) {
+      return dataFromCache;
+    } else {
+      const data = await resource();
+      await this.cacheManager.set<CategorisedValueResponse>(MONTH_KEY + '/' + id, data, this.getTimeToNextDayBegin());
+      return data;
+    }
+  }
+
+  async getYearDecadeData(id: number, resource: () => Promise<CategorisedValueResponse>) {
+    let dataFromCache = await this.cacheManager.get<CategorisedValueResponse>(YEAR_DECADE_KEY + '/' + id);
+    if (dataFromCache) {
+      return dataFromCache;
+    } else {
+      const data = await resource();
+      await this.cacheManager.set<CategorisedValueResponse>(YEAR_DECADE_KEY + '/' + id, data, this.getTimeToNextDecade());
+      return data;
+    }
+  }
+
 
   // Private methods
 
-  private getTimeToNextEvenHour() {
-    const now = new Date();
-    const nextEvenHour = new Date();
-    nextEvenHour.setHours(now.getHours() + (now.getHours() % 2 === 0 ? 2 : 1), 15, 0, 0);
-    return nextEvenHour.getTime() - now.getTime();
+  private getTimeToNextEvenHour(): number {
+    const now = dayjs();
+    const nextEvenHour = now.hour() % 2 === 0 ? now.add(2, 'hour') : now.add(1, 'hour');
+    return nextEvenHour.minute(15).second(0).millisecond(0).diff(now);
   }
 
-  private getTimeToNextDayBegin() {
-    const now = new Date();
-    const nextDayBegin = new Date();
-    if (now.getHours() >= 8) nextDayBegin.setDate(now.getDate() + 1);
-    nextDayBegin.setHours(8, 0, 0, 0);
-    return nextDayBegin.getTime() - now.getTime();
+  private getTimeToNextDayBegin(): number {
+    const now = dayjs();
+    let nextDayBegin = now.hour() >= 8 ? now.add(1, 'day') : now;
+    return nextDayBegin.hour(8).minute(0).second(0).millisecond(0).diff(now);
   }
+
+  private getTimeToNextDecade(): number {
+    const now = dayjs();
+    let nextDecade: dayjs.Dayjs;
+    if (now.date() < 11) {
+      nextDecade = now.date(11);
+    } else if (now.date() < 21) {
+      nextDecade = now.date(21);
+    } else {
+      nextDecade = now.add(1, 'month').date(1);
+    }
+    return nextDecade.hour(6).minute(0).second(0).millisecond(0).diff(now);
+  }
+
 }

@@ -7,7 +7,8 @@ import { ReservoirService } from '../reservoir/reservoir.service';
 import { StaticDto } from '../interfaces/static.response';
 import * as dayjs from 'dayjs';
 import {
-  CategorisedArrayResponse, CategorisedValueResponse,
+  CategorisedArrayResponse,
+  CategorisedValueResponse,
   ComplexValueResponse,
   OperativeValueResponse,
   ReservoiredArrayResponse,
@@ -82,87 +83,91 @@ export class DailyValueService {
   async getDecadeData(id: number) {
     return await this.redisService.getDecadeData(id, async () => {
       const now = dayjs();
-      let date: number;
-      if (now.date() < 12) {
-        date = 1;
+      let startDate: dayjs.Dayjs;
+      if (now.date() == 1) {
+        startDate = now.add(-1, 'month').date(21);
+      } else if (now.date() < 12) {
+        startDate = now.date(1)
       } else if (now.date() < 22) {
-        date = 11;
+        startDate = now.date(11);
       } else {
-        date = 21;
+        startDate = now.date(21);
       }
-      const startDate = dayjs().set('date', date);
 
       const dailyValueEntities = await this.repo.find({
         where: {
           reservoir: {
             id: id,
           },
-          date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD'))
+          date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD')),
         },
         relations: {
-          reservoir: true
+          reservoir: true,
         },
       });
 
-      return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities))
-    })
+      return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
+    });
   }
 
   async getMonthData(id: number) {
-    const now = dayjs();
-    const startDate = dayjs().set('date', 1).set('month', 0);
+    return await this.redisService.getMonthData(id, async () => {
+      const now = dayjs();
+      const startDate = dayjs().set('date', 1).set('month', 0);
 
-    const dailyValueEntities = await this.repo.find({
-      where: {
-        reservoir: {
-          id: id,
+      const dailyValueEntities = await this.repo.find({
+        where: {
+          reservoir: {
+            id: id,
+          },
+          date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD')),
         },
-        date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD'))
-      },
-      relations: {
-        reservoir: true
-      },
-    });
+        relations: {
+          reservoir: true,
+        },
+      });
 
-    return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities))
+      return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
+    });
   }
 
-  async getYearsDecadeData(reservoirId: number): Promise<CategorisedValueResponse> {
-    const result = await this.repo
-      .createQueryBuilder('dv')
-      .select([
-        'YEAR(dv.date) AS year',
-        'MONTH(dv.date) AS month',
-        `CASE 
+  async getYearsDecadeData(id: number): Promise<CategorisedValueResponse> {
+    return await this.redisService.getYearDecadeData(id, async () => {
+      const result = await this.repo
+        .createQueryBuilder('dv')
+        .select([
+          'YEAR(dv.date) AS year',
+          'MONTH(dv.date) AS month',
+          `CASE 
         WHEN DAY(dv.date) = 31 THEN FLOOR((DAY(dv.date) - 2) / 10) 
         ELSE FLOOR((DAY(dv.date) - 1) / 10) 
        END AS decade`,
-        'ROUND(AVG(dv.value)) AS value',
-        'r.id as reservoir_id',
-        'r.name AS reservoir',
-        'dv.category as category',
-        'dv.reservoir_id',
-      ])
-      .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id')
-      .where('dv.reservoir_id = :reservoirId', { reservoirId })
-      .groupBy('year, month, decade, dv.category, dv.reservoir_id, reservoir')
-      .orderBy('year', 'ASC')
-      .getRawMany();
+          'ROUND(AVG(dv.value)) AS value',
+          'r.id as reservoir_id',
+          'r.name AS reservoir',
+          'dv.category as category',
+          'dv.reservoir_id',
+        ])
+        .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id')
+        .where('dv.reservoir_id = :id', { id })
+        .groupBy('year, month, decade, dv.category, dv.reservoir_id, reservoir')
+        .orderBy('year', 'ASC')
+        .getRawMany();
 
-    return this.getCategorisedValueResponse(result.map(item => {
-      return {
-        id: 0,
-        reservoir: {id: item.reservoir_id, name: item.reservoir, dailyValue: [], lat: '', lon: ''},
-        category: item.category,
-        date: dayjs()
-          .year(item.year)
-          .month(item.month - 1)
-          .date(item.decade * 10 + 1)
-          .format('YYYY-MM-DD'),
-        value: item.value
-      } satisfies DailyValueEntity
-    }))
-
+      return this.getCategorisedValueResponse(result.map(item => {
+        return {
+          id: 0,
+          reservoir: { id: item.reservoir_id, name: item.reservoir, dailyValue: [], lat: '', lon: '' },
+          category: item.category,
+          date: dayjs()
+            .year(item.year)
+            .month(item.month - 1)
+            .date(item.decade * 10 + 1)
+            .format('YYYY-MM-DD'),
+          value: item.value,
+        } satisfies DailyValueEntity;
+      }));
+    });
   }
 
   //  Private methods //
@@ -180,31 +185,31 @@ export class DailyValueService {
   }
 
   private getCategorisedValueResponse(data: DailyValueEntity[]) {
-    const categories = this.separateByCategory(data)
+    const categories = this.separateByCategory(data);
 
     const response: CategorisedValueResponse = {
       income: {
         reservoir_id: data[0].reservoir.id,
         reservoir: data[0].reservoir.name,
-        data: categories['income']
+        data: categories['income'],
       },
       release: {
         reservoir: data[0].reservoir.name,
         reservoir_id: data[0].reservoir.id,
-        data: categories['release']
+        data: categories['release'],
       },
       level: {
         reservoir: data[0].reservoir.name,
         reservoir_id: data[0].reservoir.id,
-        data: categories['level']
+        data: categories['level'],
       },
       volume: {
         reservoir: data[0].reservoir.name,
         reservoir_id: data[0].reservoir.id,
-        data: categories['volume']
+        data: categories['volume'],
       },
 
-    }
+    };
 
     return response;
   }
