@@ -1,4 +1,4 @@
-import { Column, Entity, JoinColumn, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { DailyValueEntity } from '../daily_value/daily-value.entity';
 
 
@@ -10,12 +10,12 @@ export class ReservoirEntity {
   @Column()
   name: string;
 
-  @Column()
+  @Column({ type: 'decimal', precision: 10 })
   lat: string;
 
-  @Column()
+  @Column({ type: 'decimal', precision: 10 })
   lon: string;
 
-  @OneToMany(type => DailyValueEntity, (dailyValue) => dailyValue.reservoir)
+  @OneToMany(() => DailyValueEntity, (dailyValue) => dailyValue.reservoir)
   dailyValue: DailyValueEntity[];
 }

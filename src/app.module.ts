@@ -8,6 +8,7 @@ import { ReservoirModule } from './reservoir/reservoir.module';
 import { DailyValueModule } from './daily_value/daily-value.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RedisModule } from './redis/redis.module';
+import { LevelVolumeModule } from './level_volume/level-volume.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { RedisModule } from './redis/redis.module';
     ReservoirModule,
     DailyValueModule,
     ReservoirModule,
+    LevelVolumeModule,
     RedisModule,
   ],
   controllers: [AppController],
