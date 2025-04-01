@@ -104,33 +104,7 @@ export class DailyValueService {
         },
       });
 
-      const data = this.separateByCategory(this.formatDate(dailyValueEntities))
-
-      const response: CategorisedValueResponse = {
-        income: {
-          reservoir_id: dailyValueEntities[0].reservoir.id,
-          reservoir: dailyValueEntities[0].reservoir.name,
-          data: data['income']
-        },
-        release: {
-          reservoir: dailyValueEntities[0].reservoir.name,
-          reservoir_id: dailyValueEntities[0].reservoir.id,
-          data: data['release']
-        },
-        level: {
-          reservoir: dailyValueEntities[0].reservoir.name,
-          reservoir_id: dailyValueEntities[0].reservoir.id,
-          data: data['level']
-        },
-        volume: {
-          reservoir: dailyValueEntities[0].reservoir.name,
-          reservoir_id: dailyValueEntities[0].reservoir.id,
-          data: data['volume']
-        },
-
-      }
-
-      return response;
+      return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities))
     })
   }
 
@@ -150,33 +124,45 @@ export class DailyValueService {
       },
     });
 
-    const data = this.separateByCategory(this.formatDate(dailyValueEntities))
+    return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities))
+  }
 
-    const response: CategorisedValueResponse = {
-      income: {
-        reservoir_id: dailyValueEntities[0].reservoir.id,
-        reservoir: dailyValueEntities[0].reservoir.name,
-        data: data['income']
-      },
-      release: {
-        reservoir: dailyValueEntities[0].reservoir.name,
-        reservoir_id: dailyValueEntities[0].reservoir.id,
-        data: data['release']
-      },
-      level: {
-        reservoir: dailyValueEntities[0].reservoir.name,
-        reservoir_id: dailyValueEntities[0].reservoir.id,
-        data: data['level']
-      },
-      volume: {
-        reservoir: dailyValueEntities[0].reservoir.name,
-        reservoir_id: dailyValueEntities[0].reservoir.id,
-        data: data['volume']
-      },
+  async getYearsDecadeData(reservoirId: number): Promise<CategorisedValueResponse> {
+    const result = await this.repo
+      .createQueryBuilder('dv')
+      .select([
+        'YEAR(dv.date) AS year',
+        'MONTH(dv.date) AS month',
+        `CASE 
+        WHEN DAY(dv.date) = 31 THEN FLOOR((DAY(dv.date) - 2) / 10) 
+        ELSE FLOOR((DAY(dv.date) - 1) / 10) 
+       END AS decade`,
+        'ROUND(AVG(dv.value)) AS value',
+        'r.id as reservoir_id',
+        'r.name AS reservoir',
+        'dv.category as category',
+        'dv.reservoir_id',
+      ])
+      .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id')
+      .where('dv.reservoir_id = :reservoirId', { reservoirId })
+      .groupBy('year, month, decade, dv.category, dv.reservoir_id, reservoir')
+      .orderBy('year', 'ASC')
+      .getRawMany();
 
-    }
+    return this.getCategorisedValueResponse(result.map(item => {
+      return {
+        id: 0,
+        reservoir: {id: item.reservoir_id, name: item.reservoir, dailyValue: [], lat: '', lon: ''},
+        category: item.category,
+        date: dayjs()
+          .year(item.year)
+          .month(item.month - 1)
+          .date(item.decade * 10 + 1)
+          .format('YYYY-MM-DD'),
+        value: item.value
+      } satisfies DailyValueEntity
+    }))
 
-    return response;
   }
 
   //  Private methods //
@@ -191,6 +177,36 @@ export class DailyValueService {
       }
       return Promise.all(promises);
     });
+  }
+
+  private getCategorisedValueResponse(data: DailyValueEntity[]) {
+    const categories = this.separateByCategory(data)
+
+    const response: CategorisedValueResponse = {
+      income: {
+        reservoir_id: data[0].reservoir.id,
+        reservoir: data[0].reservoir.name,
+        data: categories['income']
+      },
+      release: {
+        reservoir: data[0].reservoir.name,
+        reservoir_id: data[0].reservoir.id,
+        data: categories['release']
+      },
+      level: {
+        reservoir: data[0].reservoir.name,
+        reservoir_id: data[0].reservoir.id,
+        data: categories['level']
+      },
+      volume: {
+        reservoir: data[0].reservoir.name,
+        reservoir_id: data[0].reservoir.id,
+        data: categories['volume']
+      },
+
+    }
+
+    return response;
   }
 
   private async getDataForOperative(reservoirs: ReservoirEntity, currentData: StaticDto, dates: string[]) {
