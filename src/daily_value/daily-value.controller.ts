@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 import { DailyValueService } from './daily-value.service';
 import { DailyValueAutoUpdateService } from './daily-value-auto-update.service';
 
@@ -24,19 +24,29 @@ export class DailyValueController {
   }
 
 
-  @Get(':id/decade')
-  async getDecadeData(@Param('id') id: number) {
+  @Get('decade')
+  async getDecadeData(@Query('id') id: number) {
     return await this.dailyValueService.getDecadeData(id);
   }
 
-  @Get(':id/year/decade')
-  async getYearsDecadeData(@Param('id') id: number) {
+  @Get('year/decade')
+  async getYearsDecadeData(@Query('id') id: number) {
     return await this.dailyValueService.getYearsDecadeData(id);
   }
 
-  @Get(':id/month')
-  async getMonthData(@Param('id') id: number) {
+  @Get('month')
+  async getMonthData(@Query('id') id: number) {
     return await this.dailyValueService.getMonthData(id);
+  }
+
+  @Get('last-year')
+  async getLastYearData(@Query('id') id: number) {
+    return await this.dailyValueService.getLastYearData(id);
+  }
+
+  @Get('year')
+  async getSelectedYearData(@Query('id') id: number, @Query('year') year: number) {
+    return await this.dailyValueService.getSelectedYearData(id, year);
   }
 
   @Get('auto')

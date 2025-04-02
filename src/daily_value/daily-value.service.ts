@@ -1,6 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Between, In, Repository } from 'typeorm';
 import { DailyValueEntity } from './daily-value.entity';
 import { RequestService } from '../request/request.service';
 import { ReservoirService } from '../reservoir/reservoir.service';
@@ -16,13 +14,13 @@ import {
 } from '../interfaces/data.response';
 import { RedisService } from '../redis/redis.service';
 import { ReservoirEntity } from '../reservoir/reservoir.entity';
+import { DailyValueRepository } from './daily-value.repository';
 
 @Injectable()
 export class DailyValueService {
 
   constructor(
-    @InjectRepository(DailyValueEntity)
-    private repo: Repository<DailyValueEntity>,
+    private repo: DailyValueRepository,
     private requestService: RequestService,
     private reservoirService: ReservoirService,
     private redisService: RedisService,
@@ -85,26 +83,16 @@ export class DailyValueService {
       const now = dayjs();
       let startDate: dayjs.Dayjs;
       if (now.date() == 1) {
-        startDate = now.add(-1, 'month').date(21);
+        startDate = now.subtract(1, 'month').date(21);
       } else if (now.date() < 12) {
-        startDate = now.date(1)
+        startDate = now.date(1);
       } else if (now.date() < 22) {
         startDate = now.date(11);
       } else {
         startDate = now.date(21);
       }
 
-      const dailyValueEntities = await this.repo.find({
-        where: {
-          reservoir: {
-            id: id,
-          },
-          date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD')),
-        },
-        relations: {
-          reservoir: true,
-        },
-      });
+      const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
 
       return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
     });
@@ -115,17 +103,7 @@ export class DailyValueService {
       const now = dayjs();
       const startDate = dayjs().set('date', 1).set('month', 0);
 
-      const dailyValueEntities = await this.repo.find({
-        where: {
-          reservoir: {
-            id: id,
-          },
-          date: Between(startDate.format('YYYY-MM-DD'), now.format('YYYY-MM-DD')),
-        },
-        relations: {
-          reservoir: true,
-        },
-      });
+      const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
 
       return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
     });
@@ -133,26 +111,7 @@ export class DailyValueService {
 
   async getYearsDecadeData(id: number): Promise<CategorisedValueResponse> {
     return await this.redisService.getYearDecadeData(id, async () => {
-      const result = await this.repo
-        .createQueryBuilder('dv')
-        .select([
-          'YEAR(dv.date) AS year',
-          'MONTH(dv.date) AS month',
-          `CASE 
-        WHEN DAY(dv.date) = 31 THEN FLOOR((DAY(dv.date) - 2) / 10) 
-        ELSE FLOOR((DAY(dv.date) - 1) / 10) 
-       END AS decade`,
-          'ROUND(AVG(dv.value)) AS value',
-          'r.id as reservoir_id',
-          'r.name AS reservoir',
-          'dv.category as category',
-          'dv.reservoir_id',
-        ])
-        .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id')
-        .where('dv.reservoir_id = :id', { id })
-        .groupBy('year, month, decade, dv.category, dv.reservoir_id, reservoir')
-        .orderBy('year', 'ASC')
-        .getRawMany();
+      const result = await this.repo.getYearsDecadeData(id);
 
       return this.getCategorisedValueResponse(result.map(item => {
         return {
@@ -168,6 +127,25 @@ export class DailyValueService {
         } satisfies DailyValueEntity;
       }));
     });
+  }
+
+  async getLastYearData(id: number) {
+    return this.getSelectedYearData(id, dayjs().subtract(1, 'year').year());
+  }
+
+  async getSelectedYearData(id: number, year: number, category: string = 'income') {
+    const monthlyData = await this.repo.getSelectedYearData(id, year, category);
+    return {
+      reservoir_id: id,
+      reservoir: monthlyData[0].reservoir,
+      data: monthlyData.map(item => {
+          return {
+            date: dayjs().year(year).month(item.month - 1).date(1).format('YYYY-MM-DD'),
+            value: item.value,
+          } satisfies ValueResponse;
+        },
+      ),
+    } satisfies ComplexValueResponse;
   }
 
   //  Private methods //
@@ -214,42 +192,27 @@ export class DailyValueService {
     return response;
   }
 
-  private async getDataForOperative(reservoirs: ReservoirEntity, currentData: StaticDto, dates: string[]) {
-    const reservoir = reservoirs;
-    const fetched = currentData;
+  private async getDataForOperative(reservoir: ReservoirEntity, currentData: StaticDto, dates: string[]) {
     const operative: OperativeValueResponse = {
       name: reservoir.name,
       income: [{
-        date: fetched.date,
-        value: fetched.income,
+        date: currentData.date,
+        value: currentData.income,
       }],
       release: [{
-        date: fetched.date,
-        value: fetched.release,
+        date: currentData.date,
+        value: currentData.release,
       }],
       level: [{
-        date: fetched.date,
-        value: fetched.level,
+        date: currentData.date,
+        value: currentData.level,
       }],
       volume: [{
-        date: fetched.date,
-        value: fetched.volume,
+        date: currentData.date,
+        value: currentData.volume,
       }],
     };
-    const data = await this.repo.find({
-      where: [
-        {
-          reservoir: reservoir,
-          date: In(dates),
-        },
-      ],
-      select: {
-        category: true,
-        value: true,
-        date: true,
-      },
-      order: { date: 'DESC' },
-    });
+    const data = await this.repo.getDataInDates(reservoir, dates);
 
     const pastData = this.formatDate(data);
     const separatedData = this.separateByCategory(pastData);

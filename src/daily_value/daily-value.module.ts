@@ -7,12 +7,12 @@ import { RequestModule } from '../request/request.module';
 import { ReservoirModule } from '../reservoir/reservoir.module';
 import { DailyValueAutoUpdateService } from './daily-value-auto-update.service';
 import { RedisModule } from '../redis/redis.module';
+import { DailyValueRepository } from './daily-value.repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([DailyValueEntity]), RequestModule, ReservoirModule, RedisModule],
   controllers: [DailyValueController],
-  providers: [DailyValueService, DailyValueAutoUpdateService],
-  // exports: [TypeOrmModule]
+  providers: [DailyValueService, DailyValueAutoUpdateService, DailyValueRepository],
 })
 export class DailyValueModule {
 }
