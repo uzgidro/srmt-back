@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DailyValueEntity } from './daily-value.entity';
-import { Between, In, Repository } from 'typeorm';
+import { Between, DataSource, In, Repository } from 'typeorm';
 import * as dayjs from 'dayjs';
 import { ReservoirEntity } from '../reservoir/reservoir.entity';
 
@@ -10,6 +10,7 @@ export class DailyValueRepository {
   constructor(
     @InjectRepository(DailyValueEntity)
     private repo: Repository<DailyValueEntity>,
+    private dataSource: DataSource,
   ) {
   }
 
@@ -91,17 +92,49 @@ export class DailyValueRepository {
 
     const year = await this.repo
       .createQueryBuilder('dv')
-      .select("YEAR(dv.date)", "year")
-      .addSelect("SUM(dv.value)", "total")
-      .where("dv.reservoir_id = :id", { id })
-      .andWhere("YEAR(dv.date) != :currentYear", { currentYear: dayjs().year() })
-      .andWhere("dv.category = :category", { category })
-      .groupBy("YEAR(dv.date)")
-      .orderBy("total", sortType)
+      .select('YEAR(dv.date)', 'year')
+      .addSelect('SUM(dv.value)', 'total')
+      .where('dv.reservoir_id = :id', { id })
+      .andWhere('YEAR(dv.date) != :currentYear', { currentYear: dayjs().year() })
+      .andWhere('dv.category = :category', { category })
+      .groupBy('YEAR(dv.date)')
+      .orderBy('total', sortType)
       .getRawOne();
 
     if (!year) return {};
 
     return year.year;
+  }
+
+  async getAvgValues(id: number, category: string = 'income') {
+    const subquery = this.repo
+      .createQueryBuilder('dv')
+      .select([
+        'MONTH(dv.date) AS month',
+        'YEAR(dv.date) AS year',
+        'SUM(dv.value) AS total',
+        'r.name AS reservoir',
+        'dv.reservoir_id AS reservoir_id',
+        'dv.category AS category',
+      ])
+      .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id')
+      .where('dv.reservoir_id = :id', { id })
+      .andWhere('dv.category = :category', { category })
+      .groupBy('year, month, reservoir, reservoir_id, category');
+
+    return this.dataSource
+      .createQueryBuilder()
+      .select([
+        'month',
+        'ROUND(AVG(total)) AS value',
+        'reservoir',
+        'reservoir_id',
+        'category',
+      ])
+      .from(`(${subquery.getQuery()})`, 'subquery')
+      .setParameters(subquery.getParameters())
+      .groupBy('month, reservoir, reservoir_id, category')
+      .orderBy('month', 'ASC')
+      .getRawMany();
   }
 }

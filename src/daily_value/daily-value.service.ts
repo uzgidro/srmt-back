@@ -158,6 +158,20 @@ export class DailyValueService {
     return this.getSelectedYearData(id, year, 'income');
   }
 
+  async getAvgData(id: number, category: string = 'income') {
+    const data = await this.repo.getAvgValues(id, category);
+    return {
+      reservoir_id: id,
+      reservoir: data[0].reservoir,
+      data: data.map(item => {
+        return {
+          date: dayjs().year(2020).month(item.month - 1).date(1).format('YYYY-MM-DD'),
+          value: item.value,
+        } satisfies ValueResponse;
+      }),
+    } satisfies ComplexValueResponse
+  }
+
   //  Private methods //
 
   private async getDataFromStatic() {

@@ -59,6 +59,11 @@ export class DailyValueController {
     return await this.dailyValueService.getMaxYearData(id);
   }
 
+  @Get('avg')
+  async getAvgYearData(@Query('id') id: number) {
+    return await this.dailyValueService.getAvgData(id);
+  }
+
   @Get('auto')
   async update() {
     return await this.auto.updateData();
