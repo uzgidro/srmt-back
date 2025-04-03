@@ -137,4 +137,61 @@ export class DailyValueRepository {
       .orderBy('month', 'ASC')
       .getRawMany();
   }
+
+  async getTenYearsAvgValues(id: number, category: string = 'income') {
+    const upperYear = dayjs().subtract(1, 'year').year();
+    const lowerYear = upperYear - 10
+
+    const subquery = this.repo
+      .createQueryBuilder('dv')
+      .select([
+        'MONTH(dv.date) AS month',
+        'YEAR(dv.date) AS year',
+        'SUM(dv.value) AS total',
+        'r.name AS reservoir',
+        'dv.reservoir_id AS reservoir_id',
+        'dv.category AS category',
+      ])
+      .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id')
+      .where('dv.reservoir_id = :id', { id })
+      .andWhere('dv.date BETWEEN :lowerYearStart AND :upperYearEnd', {
+        lowerYearStart: `${lowerYear}-01-01`,
+        upperYearEnd: `${upperYear}-12-31`,
+      })
+      .andWhere('dv.category = :category', { category })
+      .groupBy('year, month, reservoir, reservoir_id, category');
+
+    return this.dataSource
+      .createQueryBuilder()
+      .select([
+        'month',
+        'ROUND(AVG(total)) AS value',
+        'reservoir',
+        'reservoir_id',
+        'category',
+      ])
+      .from(`(${subquery.getQuery()})`, 'subquery')
+      .setParameters(subquery.getParameters())
+      .groupBy('month, reservoir, reservoir_id, category')
+      .orderBy('month', 'ASC')
+      .getRawMany();
+  }
+
+  async getTotalValuesByYears(id: number, category: string = 'income') {
+    return this.repo
+      .createQueryBuilder('dv')
+      .select([
+        'YEAR(dv.date) AS year',
+        'ROUND(SUM(dv.value)) AS value',
+        'r.name AS reservoir',
+        'dv.reservoir_id AS reservoir_id',
+        'dv.category AS category',
+      ])
+      .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id')
+      .where('dv.reservoir_id = :id', { id })
+      .andWhere('dv.category = :category', { category })
+      .groupBy('year, reservoir, reservoir_id, category')
+      .orderBy('year', 'ASC')
+      .getRawMany();
+  }
 }

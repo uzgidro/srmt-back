@@ -52,7 +52,6 @@ export class DailyValueService {
   }
 
   async getOperativeData() {
-    return this.redisService.getOperativeData(async () => {
       const today = dayjs();
       const dates = [
         today.subtract(1, 'day').format('YYYY-MM-DD'),
@@ -75,11 +74,9 @@ export class DailyValueService {
         promises.push(this.getDataForOperative(reservoirs[i], currentData[i], dates));
       }
       return Promise.all(promises);
-    });
   }
 
   async getDecadeData(id: number) {
-    return await this.redisService.getDecadeData(id, async () => {
       const now = dayjs();
       let startDate: dayjs.Dayjs;
       if (now.date() == 1) {
@@ -95,22 +92,18 @@ export class DailyValueService {
       const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
 
       return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
-    });
   }
 
   async getMonthData(id: number) {
-    return await this.redisService.getMonthData(id, async () => {
       const now = dayjs();
       const startDate = dayjs().set('date', 1).set('month', 0);
 
       const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
 
       return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
-    });
   }
 
   async getYearsDecadeData(id: number): Promise<CategorisedValueResponse> {
-    return await this.redisService.getYearDecadeData(id, async () => {
       const result = await this.repo.getYearsDecadeData(id);
 
       return this.getCategorisedValueResponse(result.map(item => {
@@ -126,7 +119,6 @@ export class DailyValueService {
           value: item.value,
         } satisfies DailyValueEntity;
       }));
-    });
   }
 
   async getLastYearData(id: number) {
@@ -170,6 +162,24 @@ export class DailyValueService {
         } satisfies ValueResponse;
       }),
     } satisfies ComplexValueResponse
+  }
+
+  async getTenYearsAvgData(id: number, category: string = 'income') {
+    const data = await this.repo.getTenYearsAvgValues(id, category);
+    return {
+      reservoir_id: id,
+      reservoir: data[0].reservoir,
+      data: data.map(item => {
+        return {
+          date: dayjs().year(2020).month(item.month - 1).date(1).format('YYYY-MM-DD'),
+          value: item.value,
+        } satisfies ValueResponse;
+      }),
+    } satisfies ComplexValueResponse
+  }
+
+  async getTotalDataByYears(id: number, category: string = 'income') {
+    return this.repo.getTotalValuesByYears(id, category)
   }
 
   //  Private methods //

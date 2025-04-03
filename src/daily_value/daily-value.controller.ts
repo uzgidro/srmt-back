@@ -64,6 +64,16 @@ export class DailyValueController {
     return await this.dailyValueService.getAvgData(id);
   }
 
+  @Get('ten-avg')
+  async getTenYearsAvgData(@Query('id') id: number) {
+    return await this.dailyValueService.getTenYearsAvgData(id);
+  }
+
+  @Get('years')
+  async getTotalDataByTears(@Query('id') id: number) {
+    return await this.dailyValueService.getTotalDataByYears(id)
+  }
+
   @Get('auto')
   async update() {
     return await this.auto.updateData();
