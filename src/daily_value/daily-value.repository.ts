@@ -85,4 +85,23 @@ export class DailyValueRepository {
       .groupBy('month, dv.reservoir_id, reservoir, dv.category')
       .getRawMany();
   }
+
+  async getExtremisYear(id: number, type: string, category: string = 'income') {
+    const sortType = type === 'max' ? 'DESC' : 'ASC';
+
+    const year = await this.repo
+      .createQueryBuilder('dv')
+      .select("YEAR(dv.date)", "year")
+      .addSelect("SUM(dv.value)", "total")
+      .where("dv.reservoir_id = :id", { id })
+      .andWhere("YEAR(dv.date) != :currentYear", { currentYear: dayjs().year() })
+      .andWhere("dv.category = :category", { category })
+      .groupBy("YEAR(dv.date)")
+      .orderBy("total", sortType)
+      .getRawOne();
+
+    if (!year) return {};
+
+    return year.year;
+  }
 }

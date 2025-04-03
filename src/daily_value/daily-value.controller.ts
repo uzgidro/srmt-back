@@ -49,6 +49,16 @@ export class DailyValueController {
     return await this.dailyValueService.getSelectedYearData(id, year);
   }
 
+  @Get('min')
+  async getMinYearData(@Query('id') id: number) {
+    return await this.dailyValueService.getMinYearData(id);
+  }
+
+  @Get('max')
+  async getMaxYearData(@Query('id') id: number) {
+    return await this.dailyValueService.getMaxYearData(id);
+  }
+
   @Get('auto')
   async update() {
     return await this.auto.updateData();

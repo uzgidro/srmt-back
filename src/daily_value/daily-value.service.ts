@@ -148,6 +148,16 @@ export class DailyValueService {
     } satisfies ComplexValueResponse;
   }
 
+  async getMinYearData(id: number) {
+    let year = await this.repo.getExtremisYear(id, 'min');
+    return this.getSelectedYearData(id, year, 'income');
+  }
+
+  async getMaxYearData(id: number) {
+    let year = await this.repo.getExtremisYear(id, 'max');
+    return this.getSelectedYearData(id, year, 'income');
+  }
+
   //  Private methods //
 
   private async getDataFromStatic() {
