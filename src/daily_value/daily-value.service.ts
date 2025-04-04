@@ -179,7 +179,17 @@ export class DailyValueService {
   }
 
   async getTotalDataByYears(id: number, category: string = 'income') {
-    return this.repo.getTotalValuesByYears(id, category)
+    const data = await this.repo.getTotalValuesByYears(id, category)
+    return {
+      reservoir_id: id,
+      reservoir: data[0].reservoir,
+      data: data.map(item => {
+        return {
+          date: dayjs().year(item.year).month(0).date(1).format('YYYY-MM-DD'),
+          value: item.value,
+        } satisfies ValueResponse;
+      }),
+    } satisfies ComplexValueResponse
   }
 
   //  Private methods //
