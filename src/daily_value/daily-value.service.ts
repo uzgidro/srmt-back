@@ -52,92 +52,65 @@ export class DailyValueService {
   }
 
   async getOperativeData() {
-      const today = dayjs();
-      const dates = [
-        today.subtract(1, 'day').format('YYYY-MM-DD'),
-        today.subtract(2, 'day').format('YYYY-MM-DD'),
-        today.subtract(1, 'year').format('YYYY-MM-DD'),
-        today.subtract(2, 'year').format('YYYY-MM-DD'),
-        today.subtract(3, 'year').format('YYYY-MM-DD'),
-      ];
+    const today = dayjs();
+    const dates = [
+      today.subtract(1, 'day').format('YYYY-MM-DD'),
+      today.subtract(2, 'day').format('YYYY-MM-DD'),
+      today.subtract(1, 'year').format('YYYY-MM-DD'),
+      today.subtract(2, 'year').format('YYYY-MM-DD'),
+      today.subtract(3, 'year').format('YYYY-MM-DD'),
+    ];
 
-      const rawData = await this.getDataFromStatic();
-      const currentData = rawData.map((data) => {
-        return data.filter(value => value.time == 6).reverse()[0];
-      });
+    const rawData = await this.getDataFromStatic();
+    const currentData = rawData.map((data) => {
+      return data.filter(value => value.time == 6).reverse()[0];
+    });
 
 
-      const reservoirs = await this.reservoirService.findAll();
-      const promises: Promise<OperativeValueResponse>[] = [];
+    const reservoirs = await this.reservoirService.findAll();
+    const promises: Promise<OperativeValueResponse>[] = [];
 
-      for (let i = 0; i < reservoirs.length; i++) {
-        promises.push(this.getDataForOperative(reservoirs[i], currentData[i], dates));
-      }
-      return Promise.all(promises);
+    for (let i = 0; i < reservoirs.length; i++) {
+      promises.push(this.getDataForOperative(reservoirs[i], currentData[i], dates));
+    }
+    return Promise.all(promises);
   }
 
   async getDecadeData(id: number) {
-      const now = dayjs();
-      let startDate: dayjs.Dayjs;
-      if (now.date() == 1) {
-        startDate = now.subtract(1, 'month').date(21);
-      } else if (now.date() < 12) {
-        startDate = now.date(1);
-      } else if (now.date() < 22) {
-        startDate = now.date(11);
-      } else {
-        startDate = now.date(21);
-      }
+    const now = dayjs();
+    let startDate: dayjs.Dayjs;
+    if (now.date() == 1) {
+      startDate = now.subtract(1, 'month').date(21);
+    } else if (now.date() < 12) {
+      startDate = now.date(1);
+    } else if (now.date() < 22) {
+      startDate = now.date(11);
+    } else {
+      startDate = now.date(21);
+    }
 
-      const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
+    const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
 
-      return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
+    return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
   }
 
   async getMonthData(id: number) {
-      const now = dayjs();
-      const startDate = dayjs().set('date', 1).set('month', 0);
+    const now = dayjs();
+    const startDate = dayjs().set('date', 1).set('month', 0);
 
-      const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
+    const dailyValueEntities = await this.repo.getDataBetween(id, startDate, now);
 
-      return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
+    return this.getCategorisedValueResponse(this.formatDate(dailyValueEntities));
   }
 
   async getYearsDecadeData(id: number): Promise<CategorisedValueResponse> {
-      const result = await this.repo.getYearsDecadeData(id);
+    const result = await this.repo.getYearsDecadeData(id);
 
-      return this.getCategorisedValueResponse(result.map(item => {
-        return {
-          id: 0,
-          reservoir: { id: item.reservoir_id, name: item.reservoir, dailyValue: [], lat: '', lon: '' },
-          category: item.category,
-          date: dayjs()
-            .year(item.year)
-            .month(item.month - 1)
-            .date(item.decade * 10 + 1)
-            .format('YYYY-MM-DD'),
-          value: item.value,
-        } satisfies DailyValueEntity;
-      }));
-  }
-
-  async getLastYearData(id: number) {
-    return this.getSelectedYearData(id, dayjs().subtract(1, 'year').year());
+    return this.getCategorisedValueResponse(result);
   }
 
   async getSelectedYearData(id: number, year: number, category: string = 'income') {
-    const monthlyData = await this.repo.getSelectedYearData(id, year, category);
-    return {
-      reservoir_id: id,
-      reservoir: monthlyData[0].reservoir,
-      data: monthlyData.map(item => {
-          return {
-            date: dayjs().year(year).month(item.month - 1).date(1).format('YYYY-MM-DD'),
-            value: item.value,
-          } satisfies ValueResponse;
-        },
-      ),
-    } satisfies ComplexValueResponse;
+    return this.repo.getSelectedYearData(id, year, category);
   }
 
   async getMinYearData(id: number) {
@@ -151,45 +124,29 @@ export class DailyValueService {
   }
 
   async getAvgData(id: number, category: string = 'income') {
-    const data = await this.repo.getAvgValues(id, category);
-    return {
-      reservoir_id: id,
-      reservoir: data[0].reservoir,
-      data: data.map(item => {
-        return {
-          date: dayjs().year(2020).month(item.month - 1).date(1).format('YYYY-MM-DD'),
-          value: item.value,
-        } satisfies ValueResponse;
-      }),
-    } satisfies ComplexValueResponse
+    return this.repo.getAvgValues(id, category);
   }
 
   async getTenYearsAvgData(id: number, category: string = 'income') {
-    const data = await this.repo.getTenYearsAvgValues(id, category);
-    return {
-      reservoir_id: id,
-      reservoir: data[0].reservoir,
-      data: data.map(item => {
-        return {
-          date: dayjs().year(2020).month(item.month - 1).date(1).format('YYYY-MM-DD'),
-          value: item.value,
-        } satisfies ValueResponse;
-      }),
-    } satisfies ComplexValueResponse
+    return this.repo.getTenYearsAvgValues(id, category);
   }
 
   async getTotalDataByYears(id: number, category: string = 'income') {
-    const data = await this.repo.getTotalValuesByYears(id, category)
+    return this.repo.getTotalValuesByYears(id, category);
+  }
+
+  async getSumUntilCurrentDecade(category: string = 'income') {
+    const reservoirs = await this.reservoirService.findAll();
+    const promises: Promise<ComplexValueResponse>[] = [];
+
+    reservoirs.forEach(item => {
+      promises.push(this.repo.getTotalValuesByYears(item.id));
+    });
+
     return {
-      reservoir_id: id,
-      reservoir: data[0].reservoir,
-      data: data.map(item => {
-        return {
-          date: dayjs().year(item.year).month(0).date(1).format('YYYY-MM-DD'),
-          value: item.value,
-        } satisfies ValueResponse;
-      }),
-    } satisfies ComplexValueResponse
+      avg: await this.repo.getSumUntilCurrentDecade(category),
+      year: await Promise.all(promises)
+    }
   }
 
   //  Private methods //
@@ -276,7 +233,11 @@ export class DailyValueService {
     }));
   }
 
-  private separateByCategory(data: DailyValueEntity[]): Record<string, ValueResponse[]> {
+  private separateByCategory<T extends {
+    value: number;
+    date: string;
+    category: string
+  }>(data: T[]): Record<string, ValueResponse[]> {
     return data.reduce((acc, item) => {
       if (!acc[item.category]) {
         acc[item.category] = [];

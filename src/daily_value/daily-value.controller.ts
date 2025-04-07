@@ -29,6 +29,11 @@ export class DailyValueController {
     return await this.dailyValueService.getDecadeData(id);
   }
 
+  @Get('decade/sum')
+  async getSumUntilCurrentDecade() {
+    return await this.dailyValueService.getSumUntilCurrentDecade();
+  }
+
   @Get('year/decade')
   async getYearsDecadeData(@Query('id') id: number) {
     return await this.dailyValueService.getYearsDecadeData(id);
@@ -37,11 +42,6 @@ export class DailyValueController {
   @Get('month')
   async getMonthData(@Query('id') id: number) {
     return await this.dailyValueService.getMonthData(id);
-  }
-
-  @Get('last-year')
-  async getLastYearData(@Query('id') id: number) {
-    return await this.dailyValueService.getLastYearData(id);
   }
 
   @Get('year')
