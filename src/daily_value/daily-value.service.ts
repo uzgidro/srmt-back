@@ -63,7 +63,7 @@ export class DailyValueService {
 
     const rawData = await this.getDataFromStatic();
     const currentData = rawData.map((data) => {
-      return data.filter(value => value.time == 6).reverse()[0];
+      return data.filter(value => value.time == 6)[0];
     });
 
 
@@ -251,7 +251,7 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.reverse().map(value => {
+      data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {
@@ -266,7 +266,7 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.reverse().map(value => {
+      data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {
@@ -281,7 +281,7 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.reverse().map(value => {
+      data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {
@@ -296,7 +296,7 @@ export class DailyValueService {
     return {
       reservoir: data[0].reservoir.name,
       reservoir_id: data[0].reservoir.id,
-      data: data.reverse().map(value => {
+      data: data.map(value => {
         let date = new Date(value.date);
         date.setHours(value.time);
         return {

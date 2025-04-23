@@ -40,7 +40,7 @@ export class RequestService {
       }).pipe(
         // transform to StaticDTO
         map(response => {
-          return response.data.items.reverse().map(item => new StaticDto(item, reservoir));
+          return response.data.items.map(item => new StaticDto(item, reservoir));
         }),
         catchError((error: AxiosError) => {
           throw 'An error happened!';
