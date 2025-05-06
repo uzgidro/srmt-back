@@ -15,7 +15,9 @@ export class ReservoirService {
   }
 
   async findAll() {
-    return this.redisService.getReservoirList(() => this.repo.find());
+    return this.redisService.getReservoirList(() =>
+      this.repo.find()
+        .then(value => value.sort((a, b) => a.position - b.position)));
   }
 
   async findOne(id: number) {

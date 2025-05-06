@@ -74,13 +74,7 @@ export class DailyValueRepository {
           .year(item.year)
           .month(item.month - 1)
           .date(item.decade * 10 + 1)
-          .format('YYYY-MM-DD'), item.value, {
-          id: item.reservoir_id,
-          name: item.reservoir,
-          dailyValue: [],
-          lat: '',
-          lon: '',
-        },
+          .format('YYYY-MM-DD'), item.value, new ReservoirEntity(item.reservoir_id, item.reservoir),
       );
     });
   }
@@ -270,6 +264,7 @@ export class DailyValueRepository {
       .select('YEAR(dv.date)', 'year')
       .addSelect('SUM(dv.value)', 'total')
       .addSelect('dv.reservoir_id', 'reservoir_id')
+      .addSelect('r.position', 'position')
       .addSelect('r.name', 'name')
       .andWhere('dv.category = :category', { category })
       .innerJoin('reservoirs', 'r', 'dv.reservoir_id = r.id');
@@ -296,20 +291,20 @@ export class DailyValueRepository {
       }),
     );
 
-    qb.groupBy('YEAR(dv.date), reservoir_id, name').orderBy('year', 'ASC');
+    qb.groupBy('YEAR(dv.date), reservoir_id, name').orderBy('position', 'ASC').orderBy('year', 'ASC');
 
     let data = await qb.getRawMany();
 
     let reduce: Record<number, any> = data.reduce((acc, item) => {
-      if (!acc[item.reservoir_id]) {
-        acc[item.reservoir_id] = [];
+      if (!acc[item.position]) {
+        acc[item.position] = [];
       }
-      acc[item.reservoir_id].push(item);
+      acc[item.position].push(item);
       return acc;
     }, {} as Record<number, any>);
 
-    return Object.entries(reduce).map(([reservoir_id, items]) => ({
-        reservoir_id: Number(reservoir_id),
+    return Object.entries(reduce).map(([_, items]) => ({
+        reservoir_id: Number(items[0].reservoir_id),
         reservoir: items[0].name,
         data: items.map((item: { year: number; total: number; }) => ({
           date: dayjs().year(item.year).month(0).date(1).format('YYYY-MM-DD'),

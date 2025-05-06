@@ -16,6 +16,18 @@ export class ReservoirEntity {
   @Column({ type: 'decimal', precision: 10 })
   lon: string;
 
+  @Column({ type: 'tinyint' })
+  position: number;
+
   @OneToMany(() => DailyValueEntity, (dailyValue) => dailyValue.reservoir)
   dailyValue: DailyValueEntity[];
+
+
+  constructor(id: number, name: string) {
+    this.id = id;
+    this.name = name;
+    this.lat = '';
+    this.lon = '';
+    this.position = 0;
+  }
 }
