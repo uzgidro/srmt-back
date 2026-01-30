@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { DailyValueEntity } from './daily-value.entity';
 import { Repository } from 'typeorm';
 import { RequestService } from '../request/request.service';
@@ -9,13 +10,16 @@ import { ReservoirEntity } from '../reservoir/reservoir.entity';
 
 @Injectable()
 export class DailyValueAutoUpdateService {
+  private readonly dataStartHour: number;
 
   constructor(
     @InjectRepository(DailyValueEntity)
     private repo: Repository<DailyValueEntity>,
     private requestService: RequestService,
     private reservoirService: ReservoirService,
+    private configService: ConfigService,
   ) {
+    this.dataStartHour = this.configService.get<number>('timing.dataStartHour') || 6;
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
@@ -43,7 +47,7 @@ export class DailyValueAutoUpdateService {
 
   private async getDataForDb(reservoir: ReservoirEntity, date: string) {
     let staticDtos = await this.requestService.fetchLastData(reservoir, date);
-    const dataAtDayBegin = staticDtos.find(item => item.time == 6);
+    const dataAtDayBegin = staticDtos.find(item => item.time == this.dataStartHour);
     let income: number;
     let release: number;
     let level: number;

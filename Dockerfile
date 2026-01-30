@@ -17,12 +17,12 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 
-# 👇 Берём только продакшен-зависимости
 RUN npm ci --omit=dev
 
-# 👇 Указываем нужный env-файл
-COPY .env.docker .env.docker
+# Config mount point
+RUN mkdir -p /app/config
 
 ENV NODE_ENV=production
+EXPOSE 3100
 
 CMD ["node", "dist/main.js"]

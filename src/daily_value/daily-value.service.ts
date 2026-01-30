@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DailyValueEntity } from './daily-value.entity';
 import { RequestService } from '../request/request.service';
 import { ReservoirService } from '../reservoir/reservoir.service';
@@ -18,13 +19,16 @@ import { DailyValueRepository } from './daily-value.repository';
 
 @Injectable()
 export class DailyValueService {
+  private readonly dataStartHour: number;
 
   constructor(
     private repo: DailyValueRepository,
     private requestService: RequestService,
     private reservoirService: ReservoirService,
     private redisService: RedisService,
+    private configService: ConfigService,
   ) {
+    this.dataStartHour = this.configService.get<number>('timing.dataStartHour') || 6;
   }
 
   async getCurrentDataByCategory(): Promise<CategorisedArrayResponse> {
@@ -63,7 +67,7 @@ export class DailyValueService {
 
     const rawData = await this.getDataFromStatic();
     const currentData = rawData.map((data) => {
-      return data.filter(value => value.time == 6)[0];
+      return data.filter(value => value.time == this.dataStartHour)[0];
     });
 
 

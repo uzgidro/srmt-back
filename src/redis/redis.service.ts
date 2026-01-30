@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
 import { StaticDto } from '../interfaces/static.response';
 import { ReservoirEntity } from '../reservoir/reservoir.entity';
@@ -14,7 +15,17 @@ const YEAR_DECADE_KEY = 'year-decade';
 
 @Injectable()
 export class RedisService {
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {
+  private readonly dataStartHour: number;
+  private readonly cacheRefreshHour: number;
+  private readonly decadeDates: number[];
+
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private configService: ConfigService,
+  ) {
+    this.dataStartHour = this.configService.get<number>('timing.dataStartHour') || 6;
+    this.cacheRefreshHour = this.configService.get<number>('timing.cacheRefreshHour') || 8;
+    this.decadeDates = this.configService.get<number[]>('timing.decadeDates') || [11, 21];
   }
 
   async getReservoirList(resource: () => Promise<ReservoirEntity[]>) {
@@ -109,21 +120,23 @@ export class RedisService {
 
   private getTimeToNextDayBegin(): number {
     const now = dayjs();
-    let nextDayBegin = now.hour() >= 8 ? now.add(1, 'day') : now;
-    return nextDayBegin.hour(8).minute(0).second(0).millisecond(0).diff(now);
+    let nextDayBegin = now.hour() >= this.cacheRefreshHour ? now.add(1, 'day') : now;
+    return nextDayBegin.hour(this.cacheRefreshHour).minute(0).second(0).millisecond(0).diff(now);
   }
 
   private getTimeToNextDecade(): number {
     const now = dayjs();
     let nextDecade: dayjs.Dayjs;
-    if (now.date() < 11) {
-      nextDecade = now.date(11);
-    } else if (now.date() < 21) {
-      nextDecade = now.date(21);
+    const [firstDecadeDate, secondDecadeDate] = this.decadeDates;
+
+    if (now.date() < firstDecadeDate) {
+      nextDecade = now.date(firstDecadeDate);
+    } else if (now.date() < secondDecadeDate) {
+      nextDecade = now.date(secondDecadeDate);
     } else {
       nextDecade = now.add(1, 'month').date(1);
     }
-    return nextDecade.hour(6).minute(0).second(0).millisecond(0).diff(now);
+    return nextDecade.hour(this.dataStartHour).minute(0).second(0).millisecond(0).diff(now);
   }
 
 }
