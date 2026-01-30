@@ -1,0 +1,128 @@
+# ===========================================
+# Git
+# ===========================================
+.git
+.gitignore
+.gitattributes
+
+# ===========================================
+# Dependencies (installed fresh in container)
+# ===========================================
+node_modules
+
+# ===========================================
+# Build output (built fresh in container)
+# ===========================================
+dist
+build
+
+# ===========================================
+# Environment & Config with secrets
+# ===========================================
+.env
+.env.*
+config/config.yaml
+
+# ===========================================
+# IDE & Editors
+# ===========================================
+.idea
+.vscode
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# ===========================================
+# OS generated files
+# ===========================================
+.DS_Store
+.DS_Store?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===========================================
+# Kubernetes manifests (not needed in image)
+# ===========================================
+srmt-back/
+
+# ===========================================
+# CI/CD (not needed in image)
+# ===========================================
+.github/
+
+# ===========================================
+# Documentation
+# ===========================================
+docs/
+*.md
+LICENSE
+
+# ===========================================
+# Testing
+# ===========================================
+test/
+tests/
+__tests__/
+*.test.ts
+*.spec.ts
+*.e2e-spec.ts
+coverage/
+.nyc_output/
+jest.config.*
+
+# ===========================================
+# Logs
+# ===========================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# ===========================================
+# Temporary files
+# ===========================================
+.temp
+.tmp
+tmp/
+temp/
+
+# ===========================================
+# Docker files (prevent recursive copy)
+# ===========================================
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# ===========================================
+# Linting & Formatting configs
+# ===========================================
+.eslintrc*
+.eslintignore
+.prettierrc*
+.prettierignore
+.editorconfig
+
+# ===========================================
+# TypeScript (tsconfig needed for build)
+# ===========================================
+tsconfig.build.tsbuildinfo
+*.tsbuildinfo
+
+# ===========================================
+# Misc
+# ===========================================
+.npmrc
+.yarnrc
+.nvmrc
+.node-version
+*.tar
+*.tar.gz
+*.zip
+comands
