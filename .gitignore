@@ -36,11 +36,15 @@ lerna-debug.log*
 !.vscode/extensions.json
 
 # dotenv environment variable files
-.env
-.env.development.local
+.env.development
+.env.production
+.env.docker
 .env.test.local
 .env.production.local
 .env.local
+
+# YAML config (contains secrets)
+config/config.yaml
 
 # temp directory
 .temp
@@ -52,5 +56,12 @@ pids
 *.seed
 *.pid.lock
 
+*.tar
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+comands
+
+/srmt-back
+/.claude
+/config

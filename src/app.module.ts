@@ -1,10 +1,34 @@
 import { Module } from '@nestjs/common';
+import envModuleConfig from './config/env-module-config';
+import mysqlModuleConfig from './config/mysql-module-config';
+import redisModuleConfig from './config/redis-module-config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ReservoirModule } from './reservoir/reservoir.module';
+import { DailyValueModule } from './daily_value/daily-value.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { RedisModule } from './redis/redis.module';
+import { LevelVolumeModule } from './level_volume/level-volume.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
-  imports: [],
+  imports: [
+    envModuleConfig,
+    mysqlModuleConfig,
+    redisModuleConfig,
+    ScheduleModule.forRoot(),
+    ReservoirModule,
+    DailyValueModule,
+    ReservoirModule,
+    LevelVolumeModule,
+    RedisModule,
+    HealthModule,
+  ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    // cacheInterceptor,
+    AppService,
+  ],
 })
-export class AppModule {}
+export class AppModule {
+}

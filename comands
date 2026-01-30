@@ -1,0 +1,2 @@
+docker build -t srmt-nest .
+docker save srmt-nest > srmt-nest.tar
