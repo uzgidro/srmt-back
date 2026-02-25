@@ -17,7 +17,9 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY package*.json ./
 
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && \
+    npm cache clean --force && \
+    rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
 # Config mount point
 RUN mkdir -p /app/config && chown node:node /app/config
