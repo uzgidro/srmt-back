@@ -1,5 +1,5 @@
 # Stage 1: build Nest app
-FROM node:22.13.1-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 COPY package*.json ./
@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: run app
-FROM node:22.13.1-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
