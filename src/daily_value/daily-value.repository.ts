@@ -97,6 +97,10 @@ export class DailyValueRepository {
       .groupBy('month, dv.reservoir_id, reservoir, dv.category')
       .getRawMany();
 
+    if (data.length === 0) {
+      return { reservoir_id: id, reservoir: '', data: [] };
+    }
+
     return {
       reservoir_id: id,
       reservoir: data[0].reservoir,
@@ -160,6 +164,10 @@ export class DailyValueRepository {
       .orderBy('month', 'ASC')
       .getRawMany();
 
+    if (data.length === 0) {
+      return { reservoir_id: id, reservoir: '', data: [] };
+    }
+
     return {
       reservoir_id: id,
       reservoir: data[0].reservoir,
@@ -210,6 +218,10 @@ export class DailyValueRepository {
       .orderBy('month', 'ASC')
       .getRawMany();
 
+    if (data.length === 0) {
+      return { reservoir_id: id, reservoir: '', data: [] };
+    }
+
     return {
       reservoir_id: id,
       reservoir: data[0].reservoir,
@@ -238,6 +250,10 @@ export class DailyValueRepository {
       .groupBy('year, reservoir, reservoir_id, category')
       .orderBy('year', 'ASC')
       .getRawMany();
+
+    if (data.length === 0) {
+      return { reservoir_id: id, reservoir: '', data: [] };
+    }
 
     return {
       reservoir_id: id,

@@ -1,5 +1,6 @@
 import { Controller, Get, HttpException, HttpStatus, Param } from '@nestjs/common';
 import { ReservoirService } from './reservoir.service';
+import { IdParamDto } from '../interfaces/query.dto';
 
 @Controller('reservoir')
 export class ReservoirController {
@@ -13,11 +14,11 @@ export class ReservoirController {
   }
 
   @Get(':id')
-  async getOne(@Param('id') id: number) {
+  async getOne(@Param() params: IdParamDto) {
     try {
-      return await this.reservoirService.findOne(id);
+      return await this.reservoirService.findOne(params.id);
     } catch (e) {
-      return new HttpException('Not found', HttpStatus.NOT_FOUND, { description: 'Cannot find reservoir with specified id' });
+      throw new HttpException('Cannot find reservoir with specified id', HttpStatus.NOT_FOUND);
     }
   }
 }

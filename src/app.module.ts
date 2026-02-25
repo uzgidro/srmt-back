@@ -19,7 +19,6 @@ import { HealthModule } from './health/health.module';
     ScheduleModule.forRoot(),
     ReservoirModule,
     DailyValueModule,
-    ReservoirModule,
     LevelVolumeModule,
     RedisModule,
     HealthModule,

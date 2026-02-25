@@ -44,7 +44,8 @@ lerna-debug.log*
 .env.local
 
 # YAML config (contains secrets)
-config/config.yaml
+/config/*
+!/config/config.example.yaml
 
 # temp directory
 .temp
@@ -64,4 +65,3 @@ comands
 
 /srmt-back
 /.claude
-/config
