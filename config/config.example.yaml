@@ -1,0 +1,39 @@
+server:
+  port: 3100
+  cors:
+    origins:
+      - http://localhost:4200
+      - https://srmt.speedwagon.uz
+    methods: GET,HEAD,PUT,PATCH,POST,DELETE
+    credentials: true
+
+database:
+  host: localhost
+  port: 3306
+  username: your_username
+  password: your_password
+  database: srmt-mysql
+  logging: false
+
+redis:
+  host: localhost
+  port: 6379
+  password: your_redis_password
+  db: 3
+
+cache:
+  ttl: 120000          # 2 minutes in ms
+  lruSize: 5000
+
+timing:
+  dataStartHour: 6       # hour when data starts
+  cacheRefreshHour: 8    # hour for cache refresh
+  decadeDates: [11, 21]  # decade days
+
+api:
+  staticDateUrl: https://static.uz/api/water/water-date
+  staticDailyUrl: https://static.uz/api/water/daily
+  requestLimit: 13
+
+business:
+  volumeConversionThreshold: 30000

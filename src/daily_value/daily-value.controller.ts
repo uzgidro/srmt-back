@@ -1,6 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { DailyValueService } from './daily-value.service';
 import { DailyValueAutoUpdateService } from './daily-value-auto-update.service';
+import { IdQueryDto, IdYearQueryDto } from '../interfaces/query.dto';
 
 @Controller('value')
 export class DailyValueController {
@@ -23,10 +24,9 @@ export class DailyValueController {
     return await this.dailyValueService.getOperativeData();
   }
 
-
   @Get('decade')
-  async getDecadeData(@Query('id') id: number) {
-    return await this.dailyValueService.getDecadeData(id);
+  async getDecadeData(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getDecadeData(query.id);
   }
 
   @Get('decade/sum')
@@ -35,43 +35,43 @@ export class DailyValueController {
   }
 
   @Get('year/decade')
-  async getYearsDecadeData(@Query('id') id: number) {
-    return await this.dailyValueService.getYearsDecadeData(id);
+  async getYearsDecadeData(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getYearsDecadeData(query.id);
   }
 
   @Get('month')
-  async getMonthData(@Query('id') id: number) {
-    return await this.dailyValueService.getMonthData(id);
+  async getMonthData(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getMonthData(query.id);
   }
 
   @Get('year')
-  async getSelectedYearData(@Query('id') id: number, @Query('year') year: number) {
-    return await this.dailyValueService.getSelectedYearData(id, year);
+  async getSelectedYearData(@Query() query: IdYearQueryDto) {
+    return await this.dailyValueService.getSelectedYearData(query.id, query.year);
   }
 
   @Get('min')
-  async getMinYearData(@Query('id') id: number) {
-    return await this.dailyValueService.getMinYearData(id);
+  async getMinYearData(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getMinYearData(query.id);
   }
 
   @Get('max')
-  async getMaxYearData(@Query('id') id: number) {
-    return await this.dailyValueService.getMaxYearData(id);
+  async getMaxYearData(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getMaxYearData(query.id);
   }
 
   @Get('avg')
-  async getAvgYearData(@Query('id') id: number) {
-    return await this.dailyValueService.getAvgData(id);
+  async getAvgYearData(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getAvgData(query.id);
   }
 
   @Get('ten-avg')
-  async getTenYearsAvgData(@Query('id') id: number) {
-    return await this.dailyValueService.getTenYearsAvgData(id);
+  async getTenYearsAvgData(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getTenYearsAvgData(query.id);
   }
 
   @Get('years')
-  async getTotalDataByTears(@Query('id') id: number) {
-    return await this.dailyValueService.getTotalDataByYears(id)
+  async getTotalDataByTears(@Query() query: IdQueryDto) {
+    return await this.dailyValueService.getTotalDataByYears(query.id)
   }
 
   @Get('auto')

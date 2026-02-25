@@ -20,9 +20,11 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Config mount point
-RUN mkdir -p /app/config
+RUN mkdir -p /app/config && chown node:node /app/config
 
 ENV NODE_ENV=production
 EXPOSE 3100
+
+USER node
 
 CMD ["node", "dist/main.js"]

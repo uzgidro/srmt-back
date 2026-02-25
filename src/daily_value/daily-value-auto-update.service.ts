@@ -25,12 +25,16 @@ export class DailyValueAutoUpdateService {
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async updateData() {
     let reservoirs = await this.reservoirService.findAll();
-    const lastDate = await this.repo.find({
+    const lastRecord = await this.repo.find({
       order: { date: 'DESC' },
       take: 1,
-    }).then(value => value[0].date);
+    });
 
-    const dates = this.getDatesFromStartToToday(lastDate);
+    if (lastRecord.length === 0) {
+      return;
+    }
+
+    const dates = this.getDatesFromStartToToday(lastRecord[0].date);
 
     const fetchPromises: Promise<DailyValueEntity[]>[] = [];
 

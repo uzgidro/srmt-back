@@ -1,4 +1,4 @@
-name: Build
+name: CI/CD Build and Deploy
 
 on:
   push:
@@ -10,7 +10,7 @@ env:
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/srmt-back
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,26 +26,44 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v5
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           tags: |
             ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
             ${{ env.DOCKER_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-#      - name: Trigger Watchtower Update
-#        run: |
-#          curl -H "Authorization: Bearer ${{ secrets.WATCHTOWER_SECRET }}" \
-#          https://${{ secrets.WATCHTOWER_HOST }}/v1/update
 
-  deploy-dev:
-    needs: build
-    if: github.event_name != 'pull_request'
+  verify-image:
     runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name != 'pull_request'
+
+    steps:
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
+  trigger-watchtower:
+    runs-on: ubuntu-latest
+    needs: verify-image
+
+    steps:
+      - name: Trigger Watchtower Update
+        run: |
+          curl -sf -H "Authorization: Bearer ${{ secrets.WATCHTOWER_SECRET }}" \
+            https://${{ secrets.WATCHTOWER_HOST }}/v1/update
+
+  update-k8s-manifest:
+    runs-on: ubuntu-latest
+    needs: verify-image
 
     steps:
       - name: Setup SSH agent
@@ -53,26 +71,19 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.GITOPS_SSH_KEY }}
 
-      - name: Update dev manifest
+      - name: Update and Push Manifest
         run: |
-          # Настройка git
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Добавляем GitHub в known_hosts
           mkdir -p ~/.ssh
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-          # Клонируем gitops репо
           git clone git@github.com:${{ github.repository_owner }}/GitOps-Repo.git gitops
-
-          # Переходим в склонированную папку
           cd gitops
 
-          # Обновляем image tag через sed
           sed -i "s|newTag:.*|newTag: ${{ github.sha }}|g" apps/srmt-back/overlays/dev/kustomization.yaml
 
-          # Коммит и пуш если есть изменения
           if [[ -n $(git status --porcelain) ]]; then
             git add apps/srmt-back/overlays/dev/kustomization.yaml
             git commit -m "deploy(dev): ${{ github.sha }}"
